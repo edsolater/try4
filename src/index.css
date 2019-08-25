@@ -12,15 +12,22 @@ code {
     monospace;
 }
 
-.hello {
+.selectBox {
   width: 48px;
   height: 32px;
+  margin: 5px;
   text-align: center;
   background: dodgerblue;
   color: white;
   line-height: 32px;
-  transition: background 400ms ease-out
+  transition: background 400ms ease-out;
+  cursor: pointer;
 }
-.hello.selected {
-  background: steelblue;
+.selectBox.selected {
+  background: crimson;
+}
+.grid {
+  display: grid;
+  width: 200px;
+  position: relative;
 }

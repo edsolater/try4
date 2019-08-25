@@ -1,10 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 import './index.css'
-import { drawCheckbox,abc } from './drawCheckbox'
+import { MultiSelectBoxes } from './MultiSelectBoxes'
 
-const [any, drawUI] = drawCheckbox()
-
-const App = () => drawUI(<div className="hello">hello</div>)
-
-ReactDOM.render(<App />, document.getElementById('root'))
+ReactDOM.render(<MultiSelectBoxes />, document.getElementById('root'))
