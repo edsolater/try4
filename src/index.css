@@ -15,19 +15,21 @@ code {
 .selectBox {
   width: 48px;
   height: 32px;
-  margin: 5px;
   text-align: center;
   background: dodgerblue;
   color: white;
   line-height: 32px;
   transition: background 400ms ease-out;
+  transition: transform 35ms ease-out;
   cursor: pointer;
 }
 .selectBox.selected {
   background: crimson;
 }
+.selectBox:hover {
+  opacity: .8;
+}
 .grid {
   display: grid;
-  width: 200px;
   position: relative;
 }

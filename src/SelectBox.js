@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react'
-import classNames from 'classnames'
 
 function makeScaleable(el, options) {
   if (options === true) options = { right: true }
@@ -73,22 +72,10 @@ function makeScaleable(el, options) {
     )
 }
 
-export function SelectBox({ text = 'hello', className, co = [0, 0] }) {
-  const [isSelected, selectedState] = useState(false)
-  const ref = useRef()
-  useEffect(() => {
-    if (ref) {
-      const el = ref.current || new HTMLElement()
-      el.addEventListener('mousedraw', () => selectedState(true))
-    }
-  }, [])
+export function _SelectBox({ text = 'hello', coordinate = [0, 0] }) {
   return (
-    <div
-      className={classNames('selectBox', { selected: isSelected }, className)}
-      ref={ref}
-      onClick={() => selectedState(!isSelected)}
-    >
-      {co.join(' ')}
+    <div className="selectBox" data-coordinate={coordinate}>
+      {coordinate.join(' ')}
     </div>
   )
 }
