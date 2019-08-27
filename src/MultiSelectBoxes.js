@@ -1,45 +1,6 @@
 import React, { useRef, useEffect } from 'react'
 import { _SelectBox } from './SelectBox'
 
-function makeDraggable(el) {
-  const configedCursor = el.style.cursor || 'grab'
-  const configedTransition = el.style.transition
-
-  el.style.cursor = configedCursor
-
-  function mouseDown(e) {
-    e.preventDefault()
-    el.style.transition = undefined // 禁用 Transition 设置（不然会拖拽不能）
-    const matched =
-      (el.style.transform || '').match(
-        /(.*)translate\((\d+)px(?:, (\d+)px)?\)(.*)/
-      ) || []
-    const otherTransformLeft = String(matched[1] || '')
-    const preTransX = Number(matched[2] || 0)
-    const preTransY = Number(matched[3] || 0)
-    const otherTransformRight = String(matched[4] || '')
-    const mousedownX = e.x
-    const mousedownY = e.y
-
-    el.style.cursor = 'grabbing'
-
-    function mouseMove(e) {
-      const newTransX = e.x - mousedownX + preTransX
-      const newTransY = e.y - mousedownY + preTransY
-      el.style.transform = `${otherTransformLeft}translate(${newTransX}px, ${newTransY}px)${otherTransformRight}`
-    }
-    function mouseUp(e) {
-      el.style.cursor = configedCursor
-      el.style.transition = configedTransition
-      document.removeEventListener('mousemove', mouseMove)
-      document.removeEventListener('mouseup', mouseUp)
-    }
-    document.addEventListener('mousemove', mouseMove)
-    document.addEventListener('mouseup', mouseUp)
-  }
-  el.addEventListener('mousedown', mouseDown)
-}
-
 function createMatrix(matrixSize = [0, 0]) {
   const [x, y] = matrixSize
   const matrix = []
@@ -55,207 +16,291 @@ function createMatrix(matrixSize = [0, 0]) {
  *
  * @param {HTMLElement} gridContainer
  */
-function handleGesture(gridContainer) {
+function mapOriginalEvent(gridContainer, { selectedItemClassName } = {}) {
+  const delay = 300 // 判定框选的鼠标长按毫秒数
   let mouseDownX = 0
   let mouseDownY = 0
   let mouseUpX = 0
   let mouseUpY = 0
   let isMouseDown = false
   let hasMouseDownMove = false
-  const delay = 300
+  let gridChildIsSelected = false
+  /**@type {NodeJS.Timeout} */
   let timeout
 
   /**
    *
    * @param {MouseEvent} e
    */
-  function mouseDown(e) {
+  function whenMouseDown(e) {
     e.preventDefault() // 禁止默认的文字拖选行为
     isMouseDown = true
     mouseDownX = e.x
     mouseDownY = e.y
+    gridChildIsSelected = e.target.classList.contains(selectedItemClassName)
 
-    document.addEventListener('mousemove', continuouslySelect)
+    document.addEventListener('mousemove', draglySelect)
     timeout = setTimeout(() => {
       // 判定为 “长按” 后的逻辑
-      document.removeEventListener('mousemove', continuouslySelect)
-      document.addEventListener('mousemove', rectangleSelect)
+      document.removeEventListener('mousemove', draglySelect)
+      document.addEventListener('mousemove', rectlySelect)
     }, delay)
-    document.addEventListener('mouseup', mouseUp)
-  }
-  // /**
-  //  *
-  //  * @param {MouseEvent} e
-  //  */
-  // function clickSelect(e) {
-  //   clearTimeout(timeout) // 此行为已定性为 “短按”
-  //   function getMousePath() {
-  //     //干嘛要显示完整的path？只要略带一点拖尾效果就好啦
-  //     let path
-  //     return path
-  //   }
-  //   function drawMousePath(path = '') {
-  //     // use SVG
-  //   }
-
-  //   const topmostElement = document.elementFromPoint(e.x, e.y)
-  //   if (topmostElement) {
-  //     topmostElement.dispatchEvent(
-  //       new CustomEvent('continuously-select', { bubbles: true })
-  //     )
-  //   }
-
-  //   const path = getMousePath()
-  //   drawMousePath(path)
-  // }
-  /**
-   *
-   * @param {MouseEvent} e
-   */
-  function continuouslySelect(e) {
-    clearTimeout(timeout) // 此行为已定性为 “短按”
-    hasMouseDownMove = true
-    function getMousePath() {
-      //干嘛要显示完整的path？只要略带一点拖尾效果就好啦
-      let path
-      return path
-    }
-    function drawMousePath(path = '') {
-      // use SVG
-    }
-
-    const topmostElement = document.elementFromPoint(e.x, e.y)
-    if (topmostElement) {
-      topmostElement.dispatchEvent(
-        new CustomEvent('continuously-select', { bubbles: true })
-      )
-    }
-
-    const path = getMousePath()
-    drawMousePath(path)
+    document.addEventListener('mouseup', clicklySelect)
+    document.addEventListener('mouseup', whenMouseUp)
   }
   /**
    *
    * @param {MouseEvent} e
    */
-  function rectangleSelect(e) {
-    hasMouseDownMove = true
-    function getMousePath() {
-      //干嘛要显示完整的path？只要略带一点拖尾效果就好啦
-      let path
-      return path
-    }
-    function drawMousePath(path = '') {
-      // use SVG
-    }
-
-    const topmostElement = document.elementFromPoint(e.x, e.y)
-    if (topmostElement) {
-      topmostElement.dispatchEvent(
-        new CustomEvent('rectangle-select', {
-          bubbles: true,
-          detail: {
-            startItem: document.elementFromPoint(mouseDownX, mouseDownY),
-          }
-        })
-      )
-    }
-    const path = getMousePath()
-    drawMousePath(path)
-  }
-  /**
-   *
-   * @param {MouseEvent} e
-   */
-  function mouseUp(e) {
+  function clicklySelect(e) {
     clearTimeout(timeout) // 此行为已定性为 “短按”
     if (isMouseDown && !hasMouseDownMove) {
       const topmostElement = document.elementFromPoint(e.x, e.y)
       if (topmostElement) {
         topmostElement.dispatchEvent(
-          new CustomEvent('click-select', { bubbles: true })
+          new CustomEvent('clickly-select', {
+            bubbles: true,
+            detail: { mode: gridChildIsSelected ? 'remove' : 'add' }
+          })
         )
       }
     }
+  }
+  /**
+   *
+   * @param {MouseEvent} e
+   */
+  function draglySelect(e) {
+    clearTimeout(timeout) // 此行为已定性为 “短按”
+    hasMouseDownMove = true
+    const topmostElement = document.elementFromPoint(e.x, e.y)
+    if (topmostElement) {
+      topmostElement.dispatchEvent(
+        new CustomEvent('dragly-select', {
+          bubbles: true,
+          detail: { mode: gridChildIsSelected ? 'remove' : 'add' }
+        })
+      )
+    }
+  }
+  /**
+   *
+   * @param {MouseEvent} e
+   */
+  function rectlySelect(e) {
+    const topmostElement = document.elementFromPoint(e.x, e.y)
+    if (topmostElement) {
+      topmostElement.dispatchEvent(
+        new CustomEvent('rectly-select', {
+          bubbles: true,
+          detail: {
+            firstTimeInvoke: !hasMouseDownMove,
+            startItem: document.elementFromPoint(mouseDownX, mouseDownY),
+            mode: gridChildIsSelected ? 'remove' : 'add'
+          }
+        })
+      )
+    }
+    hasMouseDownMove = true
+    document.addEventListener('mouseup', rectlySelectFinish)
+  }
+  /**
+   *
+   * @param {MouseEvent} e
+   */
+  function rectlySelectFinish(e) {
+    const topmostElement = document.elementFromPoint(e.x, e.y)
+    if (topmostElement) {
+      topmostElement.dispatchEvent(
+        new CustomEvent('rectly-select-finish', {
+          bubbles: true
+        })
+      )
+    }
+    document.removeEventListener('mouseup', rectlySelectFinish)
+  }
+  /**
+   *
+   * @param {MouseEvent} e
+   */
+  function whenMouseUp(e) {
     isMouseDown = false
     hasMouseDownMove = false
     mouseUpX = e.x
     mouseUpY = e.y
-    document.removeEventListener('mousemove', continuouslySelect)
-    document.removeEventListener('mousemove', rectangleSelect)
-    document.removeEventListener('mouseup', mouseUp)
+    document.removeEventListener('mousemove', draglySelect)
+    document.removeEventListener('mousemove', rectlySelect)
+    document.removeEventListener('mouseup', clicklySelect)
+    document.removeEventListener('mouseup', whenMouseUp)
   }
-  gridContainer.addEventListener('mousedown', mouseDown)
+  gridContainer.addEventListener('mousedown', whenMouseDown)
 }
 
 /**
  *
  * @param {HTMLElement} gridContainer
  */
-function mapGesture(gridContainer) {
-  const gridChildren = gridContainer.childNodes
-  gridContainer.addEventListener(
-    'click-select',
-    /**@type {MouseEvent} */ e => {
-      /**@type {HTMLElement} */
-      const targetGridChild = e.target
-      if (targetGridChild) {
-        targetGridChild.classList.toggle('selected')
+function dealWithCustomEvent(
+  gridContainer,
+  { selectedItemClassName, rectlySelectedItemClassName } = {}
+) {
+  const gridChildren = Array.from(gridContainer.children)
+  let shouldPaintItems = []
+  let paintMode
+  function getDatasetValue(target, key) {
+    if (target) {
+      return target.dataset && target.dataset[key]
+    }
+    return null
+  }
+  /**
+   *
+   * @param {HTMLElement[] | HTMLElement} item
+   * @param {string} mode
+   */
+  function paintItem(item, { mode, className } = {}) {
+    if (item instanceof Array) {
+      item.forEach(item => item.classList[mode](className))
+    } else {
+      item.classList[mode](className)
+    }
+  }
+  function getItemByCoordinate(coordinate = []) {
+    if (typeof coordinate === 'string') {
+      return gridChildren.find(item => {
+        const gridChildCoordinate = getDatasetValue(item, 'coordinate')
+        return gridChildCoordinate === coordinate
+      })
+    } else {
+      return gridChildren.filter(item => {
+        const gridChildCoordinate = getDatasetValue(item, 'coordinate')
+        return coordinate.includes(gridChildCoordinate)
+      })
+    }
+  }
+  /**
+   *
+   * @eventListener
+   */
+  function clicklySelect({ target: targetGridChild, detail }) {
+    const mode = detail && detail.mode
+    if (gridChildren.includes(targetGridChild)) {
+      paintItem(targetGridChild, { mode, className: selectedItemClassName })
+    }
+  }
+  /**
+   *
+   * @eventListener
+   */
+  function draglySelect({ target: targetGridChild, detail }) {
+    const mode = detail && detail.mode
+    if (gridChildren.includes(targetGridChild)) {
+      paintItem(targetGridChild, { mode, className: selectedItemClassName })
+    }
+  }
+  /**
+   *
+   * @eventListener
+   */
+  function rectlySelect({ target: endGridChild, detail }) {
+    if (!detail) detail = {}
+    /**
+     *
+     * @pureFunction
+     */
+    function diff(prevCoordinates = [], newCoordinates = []) {
+      function arrayMinus(array1, array2) {
+        return array1.filter(x => !array2.includes(x))
+      }
+      function arrayInterset(array1, array2) {
+        return array1.filter(x => array2.includes(x))
+      }
+      const commonCoordinates = arrayInterset(prevCoordinates, newCoordinates)
+      return {
+        newItems: arrayMinus(newCoordinates, commonCoordinates),
+        oldItems: arrayMinus(prevCoordinates, commonCoordinates)
       }
     }
-  )
-  gridContainer.addEventListener(
-    'continuously-select',
-    ({ target: targetGridChild }) => {
-      if (targetGridChild) {
-        targetGridChild.classList.add('selected')
-      }
+    /**
+     *
+     * @DOMEffect
+     */
+    function drawRect(shouldDeselectItems, shouldSelectItems) {
+      paintItem(getItemByCoordinate(shouldSelectItems), {
+        mode: 'add',
+        className: rectlySelectedItemClassName
+      })
+      paintItem(getItemByCoordinate(shouldDeselectItems), {
+        mode: 'remove',
+        className: rectlySelectedItemClassName
+      })
     }
-  )
-  gridContainer.addEventListener(
-    'rectangle-select',
-    /**@type {CustomEvent} */ ({
-      target: endGridChild,
-      detail: { startItem: startGridChild }
-    }) => {
-      const gridChildrens = Array.from(gridChildren)
-      if (
-        gridChildrens.includes(startGridChild) &&
-        gridChildrens.includes(endGridChild)
-      ) {
-        function getRectangle(point1, point2) {
-          point1 = point1.split(',')
-          point2 = point2.split(',')
-          const selectedCoordinates = []
-          const top = Math.min(point1[1], point2[1])
-          const right = Math.max(point1[0], point2[0])
-          const bottom = Math.max(point1[1], point2[1])
-          const left = Math.min(point1[0], point2[0])
-          for (let i = left; i < right + 1; i++) {
-            for (let j = top; j < bottom + 1; j++) {
-              selectedCoordinates.push(`${i},${j}`)
-            }
-          }
-          return selectedCoordinates
+    function getSelectedCoordinates(point1, point2) {
+      point1 = point1.split(',')
+      point2 = point2.split(',')
+      const selectedCoordinates = []
+      const top = Math.min(point1[1], point2[1])
+      const right = Math.max(point1[0], point2[0])
+      const bottom = Math.max(point1[1], point2[1])
+      const left = Math.min(point1[0], point2[0])
+      for (let i = left; i < right + 1; i++) {
+        for (let j = top; j < bottom + 1; j++) {
+          selectedCoordinates.push(`${i},${j}`)
         }
-        const rectangle = getRectangle(
-          startGridChild.dataset.coordinate,
-          endGridChild.dataset.coordinate
-        )
-        gridChildrens
-          .filter(gridchild => rectangle.includes(gridchild.dataset.coordinate))
-          .forEach(gridChild => gridChild.classList.add('selected'))
       }
+      return selectedCoordinates
     }
-  )
+    const startGridChild = detail.startItem
+    paintMode = detail.mode
+    if (gridChildren.includes(startGridChild) && gridChildren.includes(endGridChild)) {
+      const prevCoordinates = detail.firstTimeInvoke ? [] : rectlySelect.prevCoordinates
+      const newCoordinates = getSelectedCoordinates(
+        startGridChild.dataset.coordinate,
+        endGridChild.dataset.coordinate
+      )
+      rectlySelect.prevCoordinates = newCoordinates
+      const { oldItems: shouldDeselectItems, newItems: shouldSelectItems } = diff(
+        prevCoordinates,
+        newCoordinates
+      )
+      shouldPaintItems = newCoordinates
+      drawRect(shouldDeselectItems, shouldSelectItems)
+    }
+  }
+  /**
+   *
+   * @eventListener
+   */
+  function rectlySelectFinish() {
+    getItemByCoordinate(shouldPaintItems).forEach(item => {
+      paintItem(item, { mode: paintMode, className: selectedItemClassName })
+      paintItem(item, { mode: 'remove', className: rectlySelectedItemClassName })
+    })
+    shouldPaintItems = []
+  }
+  gridContainer.addEventListener('clickly-select', clicklySelect)
+  gridContainer.addEventListener('dragly-select', draglySelect)
+  gridContainer.addEventListener('rectly-select', rectlySelect)
+  gridContainer.addEventListener('rectly-select-finish', rectlySelectFinish)
 }
 
-export function MultiSelectBoxes({ matrixSize = [15, 15] }) {
+/**
+ *
+ * @param {HTMLElement} gridContainer
+ */
+function understandSelectGesture(gridContainer, config) {
+  mapOriginalEvent(gridContainer, config)
+  dealWithCustomEvent(gridContainer, config)
+}
+
+export function MultiSelectBoxes({
+  matrixSize = [15, 15],
+  config: { selectedItemClassName = 'selected', rectlySelectedItemClassName = 'inSelectRect' } = {}
+}) {
   const ref = useRef()
   const matrix = createMatrix(matrixSize)
   useEffect(() => {
-    handleGesture(ref.current)
-    mapGesture(ref.current)
+    understandSelectGesture(ref.current, { selectedItemClassName, rectlySelectedItemClassName })
   }, [])
   return (
     <div
