@@ -1,7 +1,41 @@
 import React, { useRef, useEffect } from 'react'
 import { _SelectBox } from './SelectBox'
 
-function createMatrix(matrixSize = [0, 0]) {
+export function MultiSelectBoxes({
+  matrixSize = [15, 15],
+  config: { selectedItemClassName = 'selected', rectlySelectedItemClassName = 'inSelectRect' } = {}
+}) {
+  const ref = useRef()
+  const coordinates = createCoordinates(matrixSize)
+  useEffect(() => {
+    understandSelectGesture(ref.current, { selectedItemClassName, rectlySelectedItemClassName })
+  }, [])
+  return (
+    <div
+      className="grid"
+      style={{
+        gridTemplateColumns: `repeat(${matrixSize[0]}, max-content)`
+      }}
+      ref={ref}
+    >
+      {coordinates.flatMap(coordinate => (
+        <_SelectBox key={coordinate} coordinate={coordinate} />
+      ))}
+    </div>
+  )
+}
+
+/**
+ *
+ * @param {HTMLDivElement} gridContainer
+ */
+function understandSelectGesture(gridContainer, config) {
+  mapOriginalEvent(gridContainer, config)
+  dealWithCustomEvent(gridContainer, config)
+}
+
+//TODO: 长按得有指示的UI
+function createCoordinates(matrixSize = [0, 0]) {
   const [x, y] = matrixSize
   const matrix = []
   for (let j = 0; j < y; j++) {
@@ -14,7 +48,7 @@ function createMatrix(matrixSize = [0, 0]) {
 
 /**
  *
- * @param {HTMLElement} gridContainer
+ * @param {HTMLDivElement} gridContainer
  */
 function mapOriginalEvent(gridContainer, { selectedItemClassName } = {}) {
   const delay = 300 // 判定框选的鼠标长按毫秒数
@@ -27,7 +61,6 @@ function mapOriginalEvent(gridContainer, { selectedItemClassName } = {}) {
   let gridChildIsSelected = false
   /**@type {NodeJS.Timeout} */
   let timeout
-
   /**
    *
    * @param {MouseEvent} e
@@ -138,7 +171,7 @@ function mapOriginalEvent(gridContainer, { selectedItemClassName } = {}) {
 
 /**
  *
- * @param {HTMLElement} gridContainer
+ * @param {HTMLDivElement} gridContainer
  */
 function dealWithCustomEvent(
   gridContainer,
@@ -284,35 +317,3 @@ function dealWithCustomEvent(
   gridContainer.addEventListener('rectly-select-finish', rectlySelectFinish)
 }
 
-/**
- *
- * @param {HTMLElement} gridContainer
- */
-function understandSelectGesture(gridContainer, config) {
-  mapOriginalEvent(gridContainer, config)
-  dealWithCustomEvent(gridContainer, config)
-}
-
-export function MultiSelectBoxes({
-  matrixSize = [15, 15],
-  config: { selectedItemClassName = 'selected', rectlySelectedItemClassName = 'inSelectRect' } = {}
-}) {
-  const ref = useRef()
-  const matrix = createMatrix(matrixSize)
-  useEffect(() => {
-    understandSelectGesture(ref.current, { selectedItemClassName, rectlySelectedItemClassName })
-  }, [])
-  return (
-    <div
-      className="grid"
-      style={{
-        gridTemplateColumns: `repeat(${matrixSize[0]}, max-content)`
-      }}
-      ref={ref}
-    >
-      {matrix.flatMap(coordinate => (
-        <_SelectBox key={coordinate} coordinate={coordinate} />
-      ))}
-    </div>
-  )
-}
