@@ -17,20 +17,26 @@ class Functor {
       this.value = values
     }
   }
-  setby(newValue) {
+  setValue(newValue) {
     this.value = newValue
     return this
   }
-  use(...fns) {
-    const fn = pipe(...fns)
+  use(fn) {
     if (Array.isArray(this.value)) {
       const newValue = this.value.map(fn)
-      this.setby(newValue)
+      this.setValue(newValue)
     } else {
       const newValue = fn(this.value)
-      this.setby(newValue)
+      this.setValue(newValue)
     }
     return this
+  }
+  pipeUse(...fns){
+    const fn = pipe(...fns)
+    return this.use(fn)
+  }
+  chainUse(superFn){
+
   }
   /**
    * @return {this}
@@ -38,11 +44,15 @@ class Functor {
   _selfClone() {
     return new this.constructor(this.value)
   }
-  /**
-   * a shortcut
-   */
-  map(...fns) {
-    return this._selfClone().use(...fns)
+  map(fn) {
+    return this._selfClone().use(fn)
+  }
+  pipeMap(...fns){
+    const fn = pipe(...fns)
+    return this.map(fn)
+  }
+  chainMap(superFn){
+
   }
 }
 class StackFunctor extends Functor {
