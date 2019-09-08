@@ -11,60 +11,48 @@ function pipe(...fns) {
 class Functor {
   //TODO:Typescript 中如何 “有作用域地” 判定数据类型？
   constructor(...values) {
-    function isOne(value) {
-      if (value.length === 1) {
-        return true
-      } else {
-        return false
-      }
-    }
-    this._isOne = isOne(values)
-    if (this._isOne) {
+    if (values.length === 1) {
       this.value = values[0]
     } else {
       this.value = values
     }
   }
-  /**
-   * @return {this}
-   */
-  selfClone() {
-    return new this.constructor(this.value)
+  setby(newValue) {
+    this.value = newValue
+    return this
   }
-  /**
-   * @return {this}
-   */
   use(...fns) {
     const fn = pipe(...fns)
-    if (this._isOne) {
-      this.value = fn(this.value)
+    if (Array.isArray(this.value)) {
+      const newValue = this.value.map(fn)
+      this.setby(newValue)
     } else {
-      this.value = this.value.map(fn)
+      const newValue = fn(this.value)
+      this.setby(newValue)
     }
     return this
   }
   /**
    * @return {this}
    */
-  map(...fns) {
-    return this.selfClone().use(...fns)
+  _selfClone() {
+    return new this.constructor(this.value)
   }
   /**
-   * @return {this}
+   * a shortcut
    */
-  mutate(newValue) {
-    this.value = newValue
-    return this
+  map(...fns) {
+    return this._selfClone().use(...fns)
   }
 }
 class StackFunctor extends Functor {
   constructor(value) {
     super(value)
-    this.value = value
   }
 }
 const b = new StackFunctor({ a: [1] })
 const c = b.map(({ a }) => ({ a: a.concat(2) }))
 console.log('c: ', c)
 console.log('b: ', b)
-console.log(new StackFunctor(4).use(n => n * n, n => n + 2))
+console.log(new StackFunctor(4).use().use(n => n * n, n => n + 2))
+console.log(StackFunctor.prototype)
