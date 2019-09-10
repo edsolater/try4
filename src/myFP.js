@@ -18,7 +18,11 @@ function pipe(...fns) {
  * @param {*} value
  * @return {'array'}
  */
-function typeOf(value) {}
+function typeOf(value) {
+  //TODO:完善函数体逻辑
+  if(Array.isArray(value)) return 'array'
+  if(typeof this.value === 'function') return 'function'
+}
 /**
  *
  * 产生基本涵子对象
@@ -38,27 +42,19 @@ class Functor {
     return this
   }
   /**
-   * 对涵子内的值/值们应用单个函数
-   * @param {function} fn
+   * 对涵子内的值/值们应用单/多个函数
+   * @param {function[]} fns
    */
-  use(fn) {
-    if (Array.isArray(this.value)) {
+  use(...fns) {
+    const fn = pipe(fns)
+    if (typeOf(this.value) === 'array') {
       const newValue = this.value.map(fn)
       this.replaceValue(newValue)
-    } else if (typeof this.value === 'function') {
+    } else if (typeOf(this.value) === 'function') {
       const newValue = fn(this.value)
       this.replaceValue(newValue)
     }
     return this
-  }
-  /**
-   *
-   * 对涵子内的值/值们应用多个函数
-   * @param {...function[]} fns
-   */
-  pipeUse(...fns) {
-    const fn = pipe(...fns)
-    return this.use(fn)
   }
   /**
    *
@@ -70,20 +66,27 @@ class Functor {
   }
   /**
    *
-   * 对涵子内的值/值们应用单个函数，不会应用函数，但返回一个新涵子包裹的值
+   * 对涵子内的值/值们应用单/多个函数，不会应用函数，但返回一个新涵子包裹的值
    * @param {function} fn
    */
   map(fn) {
     return this.clone().use(fn)
   }
   /**
-   *
-   * 对涵子内的值/值们应用多个函数，不会应用函数，但返回一个新涵子包裹的值
-   * @param  {...function} fns
+   * 
+   * 写入涵子操作步骤
+   * @param  {...function[]} fns 
    */
-  pipeMap(...fns) {
-    const fn = pipe(...fns)
-    return this.map(fn)
+  record(...fns){
+    return this
+  }
+  /**
+   * 
+   * 应用操作步骤
+   * @param  {...function[]} fns 
+   */
+  run(...fns){
+    return this
   }
 }
 class StackFunctor extends Functor {
