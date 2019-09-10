@@ -1,3 +1,8 @@
+/**
+ * 管道函数
+ * @param  {...function[]} fns
+ * @return {function}
+ */
 function pipe(...fns) {
   if (fns.length === 0) {
     return any => any
@@ -8,6 +13,16 @@ function pipe(...fns) {
     return fns.reduce(_pipe)
   }
 }
+/**
+ * 判断值的类型
+ * @param {*} value
+ * @return {'array'}
+ */
+function typeOf(value) {}
+/**
+ *
+ * 产生基本涵子对象
+ */
 class Functor {
   //TODO:Typescript 中如何 “有作用域地” 判定数据类型？
   constructor(...values) {
@@ -17,42 +32,58 @@ class Functor {
       this.value = values
     }
   }
-  setValue(newValue) {
+  replaceValue(newValue) {
+    //TODO:应用其上的规则，依然应用在新值上
     this.value = newValue
     return this
   }
+  /**
+   * 对涵子内的值/值们应用单个函数
+   * @param {function} fn
+   */
   use(fn) {
     if (Array.isArray(this.value)) {
       const newValue = this.value.map(fn)
-      this.setValue(newValue)
-    } else {
+      this.replaceValue(newValue)
+    } else if (typeof this.value === 'function') {
       const newValue = fn(this.value)
-      this.setValue(newValue)
+      this.replaceValue(newValue)
     }
     return this
   }
-  pipeUse(...fns){
+  /**
+   *
+   * 对涵子内的值/值们应用多个函数
+   * @param {...function[]} fns
+   */
+  pipeUse(...fns) {
     const fn = pipe(...fns)
     return this.use(fn)
   }
-  chainUse(superFn){
-
-  }
   /**
+   *
+   * 克隆涵子内的值/值们
    * @return {this}
    */
-  _selfClone() {
+  clone() {
     return new this.constructor(this.value)
   }
+  /**
+   *
+   * 对涵子内的值/值们应用单个函数，不会应用函数，但返回一个新涵子包裹的值
+   * @param {function} fn
+   */
   map(fn) {
-    return this._selfClone().use(fn)
+    return this.clone().use(fn)
   }
-  pipeMap(...fns){
+  /**
+   *
+   * 对涵子内的值/值们应用多个函数，不会应用函数，但返回一个新涵子包裹的值
+   * @param  {...function} fns
+   */
+  pipeMap(...fns) {
     const fn = pipe(...fns)
     return this.map(fn)
-  }
-  chainMap(superFn){
-
   }
 }
 class StackFunctor extends Functor {
