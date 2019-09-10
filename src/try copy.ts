@@ -28,6 +28,10 @@ function typeOf(value) {
  * 产生基本涵子对象
  */
 class Functor {
+  value: any
+  valueHistory: any[]
+  processRecord: any[]
+  record: any
   //TODO:Typescript 中如何 “有作用域地” 判定数据类型？
   constructor(...values) {
     if (values.length === 1) {
@@ -54,10 +58,7 @@ class Functor {
     if (fns.length) {
       const fn = pipe(fns)
       if (typeOf(this.value) === 'array') {
-        const newValue =[]
-        for (const element of this.value) {
-          newValue.push(fn(element))
-        }
+        const newValue = this.value.map(fn)
         this.setValue(newValue)
       } else if (typeOf(this.value) === 'function') {
         const newValue = fn(this.value)
@@ -76,12 +77,12 @@ class Functor {
     return new this.constructor(this.value)
   }
   /**
-   *  只是个快捷方式
+   *
    * 对涵子内的值/值们应用单/多个函数，不会应用函数，但返回一个新涵子包裹的值
    * @param {function} fn
    */
-  map(...fns) {
-    return this.clone().run(...fns)
+  map(fn) {
+    return this.clone().run(fn)
   }
   /**
    *
