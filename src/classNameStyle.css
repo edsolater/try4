@@ -1,6 +1,11 @@
 /* 这属于低级baseStyle，只为快速实现可理解的基本显示效果而生。 */
 /* 不应再项目代码中更改此文件 */
-.left {
+.text.left {
   text-align: left;
-  
+}
+.text.right {
+  text-align: right;
+}
+.flex {
+  display: flex
 }
