@@ -1,63 +1,116 @@
 /* 这属于低级baseStyle，只为快速实现可理解的基本显示效果而生。 */
 /* 不应再项目代码中更改此文件 */
+//#region 快速实现
 .text.center {
   text-align: center;
 }
+
 .text.right {
   text-align: right;
 }
+
 .flex {
   display: flex;
 }
+
+//#endregion
+
+//#region 颜色相关
 :root {
-  --primary: hsl(210, 100%, 76%);
-  --primary2: hsl(231, 100%, 74%);
-  --primary3: hsl(278, 39%, 37%);
-  --secondary: hsl(162, 89%, 65%);
+  --primary   : hsl(210, 100%, 76%);
+  --primary2  : hsl(231, 100%, 74%);
+  --primary3  : hsl(278, 39%, 37%);
+  --secondary : hsl(162, 89%, 65%);
   --secondary2: hsl(140, 89%, 65%);
 }
+
 .primary {
   background: var(--primary);
 }
+
 .primary2 {
   background: var(--primary2);
 }
+
 .primary3 {
   background: var(--primary3);
 }
+
 .secondary {
   background: var(--secondary);
 }
+
 .secondary2 {
   background: var(--secondary2);
 }
+
 .text.primary {
   color: var(--primary);
 }
+
 .text.primary2 {
   color: var(--primary2);
 }
+
 .text.primary3 {
   color: var(--primary3);
 }
+
 .text.secondary {
   color: var(--secondary);
 }
+
 .text.secondary2 {
   color: var(--secondary2);
 }
+
+//#endregion
+
+//#region 状态相关
 .failed {
   all: none;
 }
+
 .disabled {
   filter: opacity(0.2);
+  // lose all color
 }
+
+//#endregion
+
+.border-radius(@radius; @f) {
+  -webkit-border-radius: @radius;
+  -moz-border-radius   : @radius;
+  border-radius        : @radius;
+}
+
 .button {
-  -webkit-border-radius: 7px;
-  -moz-border-radius: 7px;
-  border-radius: 7px;
+  .border-radius(7px; 8px);
 }
+
+#theme {
+  .color {
+    .colors(light) {
+      primary  : purple;
+      secondary: red;
+    }
+  }
+}
+
 .navbar {
-  background: purple;
-  border: 1px solid red;
+  @colors   : #theme.color.colors(light);
+  background: @colors[primary];
+  border    : 1px solid @colors[secondary];
+}
+
+@my-ruleset: {
+  .my-selector {
+    @media tv {
+      background-color: black;
+    }
+  }
+}
+
+@media (orientation:portrait) {
+  @my-ruleset();
 }

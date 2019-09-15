@@ -15,5 +15,3 @@ class Foo<T> {
   }
 }
 const a = new Foo(['hi'])
-a.value. //TOFIX: 此处需要typescript自动提示
-'hi'.

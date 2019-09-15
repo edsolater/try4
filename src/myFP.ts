@@ -3,7 +3,7 @@
  * @param  {...function[]} fns
  * @return {function}
  */
-function pipe(...fns) {
+function pipe(...fns: function[][]): function {
   if (fns.length === 0) {
     return any => any
   } else if (fns.length === 1) {
@@ -18,55 +18,61 @@ function pipe(...fns) {
  * @param {*} value
  * @return {'array'}
  */
-function typeOf(value) {
+function typeOf(value: any): 'array' {
   //TODO:完善函数体逻辑
   if (Array.isArray(value)) return 'array'
   if (typeof this.value === 'function') return 'function'
 }
+type FunctorValue = any
+type Process = Function
+
 /**
  *
  * 产生基本涵子对象
  */
 class Functor {
-  //TODO:Typescript 中如何 “有作用域地” 判定数据类型？
+  _value: FunctorValue
+  history: { value: FunctorValue; processes: Process[] }[]
+  record: any[]
+
   constructor(...values) {
+    //TODO:Typescript 中如何 “有作用域地” 判定数据类型？
     if (values.length === 1) {
       this._value = values[0]
     } else {
       this._value = values
     }
-    this.history = [{ value: this._value, use: [] }] // 记录一切过程
+    this.history = [{ value: this._value, processes: [] }] // 记录一切过程
   }
-  set value(newValue) {
+
+  setValue(newValue) {
     //TODO:应用其上的规则，依然应用在新值上
-    this.history.push({ value: newValue, use: [] })
+    this.history.push({ value: newValue, processes: [] })
     this._value = newValue
     return this
   }
-  get value() {
-    return this._value
-  }
+
   /**
    *
    * 克隆涵子内的值/值们，克隆默认不包含历时记录
-   * @return {this}
    */
-  clone({ history = false } = {}) {
+  clone({ history = false } = {}): this {
     const newWrappedValue = new this.constructor(this._value)
     if (history === true) {
       newWrappedValue.history = this.history.slice()
     }
     return newWrappedValue
   }
+
   /**
    * 对涵子内的值/值们应用单/多个函数
    * @param {function[]} fns
    */
-  use(...fns) {
+  use(...fns: Function[]) {
     if (fns.length) {
       // 记录传入的fns
-      const recordedProcess = this.history[this.history.length - 1].use
-      fns.forEach(fn => recordedProcess.push(fn))
+      const processes = this.history[this.history.length - 1].processes
+      fns.forEach(fn => processes.push(fn))
 
       //使用
       const fn = pipe(fns)
@@ -77,34 +83,34 @@ class Functor {
           newValue.push(fn(element))
         }
       } else if (typeOf(this._value) === 'function') {
-        newValue = fn(element)
+        newValue = fn(this._value)
       }
-      this.value = newValue
+      this.setValue(newValue)
     }
     return this
   }
   /**
    *  只是个快捷方式
    * 对涵子内的值/值们应用单/多个函数，不会应用函数，但返回一个新涵子包裹的值
-   * @param {function} fn
    */
-  map(...fns) {
+  map(...fns: Function[]) {
     return this.clone().use(...fns)
   }
+
   /**
    *
    * 写入涵子操作步骤
-   * @param  {...function[]} fns
    */
-  setProcessRecord(...fns) {
+  setProcessRecord(...fns: Function[]) {
     return this
   }
+
   /**
    *
    * 应用操作步骤
-   * @param  {...function[]} fns
    */
-  applyProcessRecord(...fns) {
+  applyProcessRecord(...fns: Function[]) {
+    this.clearProcessRecord()
     return this
   }
   /**
@@ -127,3 +133,5 @@ console.log('c: ', c)
 console.log('b: ', b)
 console.log(new StackFunctor(4).use().use(n => n * n, n => n + 2))
 console.log(StackFunctor.prototype)
+
+const foo =  true ? 'he': 'ha'
